@@ -17,14 +17,13 @@ type GivenCert struct {
 	НомерСертификата int
 	СтраховойНомер   string
 }
-
-type MZMK struct {
-	Total  int `json:"total"`
-	ApplicationList []struct{
-		Id int `json:"id"`
-		} `json:"applicationList"`
+type mzmkApplication struct {
+	IncomingNum string `json:"incomingNum"`
 }
 
+type MZMK struct {
+	ApplicationList []mzmkApplication `json:"applicationList"`
+}
 
 const basePath = "/Users/artur/Yandex.Disk/docs/pflb_prj/'15/05.22_Rstyle/mq/"
 
@@ -53,6 +52,7 @@ func mzmkh(w http.ResponseWriter, r *http.Request) {
 }
 
 var givenCerts []GivenCert
+var newMZMKs MZMK
 
 func mzrkh(w http.ResponseWriter, r *http.Request) {
 	filename := path.Join(basePath, "мзркTempl-4.xml")
@@ -79,21 +79,20 @@ func mzrkh(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 func mzmkLoadedh(w http.ResponseWriter, r *http.Request) {
 
 	var mzmk MZMK
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r.Body)
 	b := buf.Bytes()
-	//fmt.Fprintf(w, "Body %s\n", b)
-
 	err := json.Unmarshal(b, &mzmk)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 
 	}
 	fmt.Fprintf(w, "%+v", mzmk)
+	newMZMKs = mzmk
+
 }
 
 func Testh(w http.ResponseWriter, r *http.Request) {
@@ -104,6 +103,21 @@ func Testh(w http.ResponseWriter, r *http.Request) {
 	b := buf.Bytes()
 	s := *(*string)(unsafe.Pointer(&b))
 	fmt.Fprintf(w, "Body["+s+"]")
+}
+
+func newMZMKsh(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json;charset=UTF-8")
+
+	var m mzmkApplication
+	m = newMZMKs.ApplicationList[0]
+
+	b, err := json.Marshal(m)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	fmt.Fprintf(w, string(b))
+
 }
 
 func MSKCerth(w http.ResponseWriter, r *http.Request) {
@@ -173,6 +187,7 @@ func main() {
 	http.HandleFunc("/cert", MSKCerth)
 	http.HandleFunc("/test", Testh)
 	http.HandleFunc("/mzmkLoaded", mzmkLoadedh)
+	http.HandleFunc("/newMZMKs", newMZMKsh)
 
 	http.ListenAndServe(":8080", nil)
 }
