@@ -18,6 +18,14 @@ type GivenCert struct {
 	СтраховойНомер   string
 }
 
+type MZMK struct {
+	Total  int `json:"total"`
+	ApplicationList []struct{
+		Id int `json:"id"`
+		} `json:"applicationList"`
+}
+
+
 const basePath = "/Users/artur/Yandex.Disk/docs/pflb_prj/'15/05.22_Rstyle/mq/"
 
 var certNum = 0
@@ -36,7 +44,7 @@ func mzmkh(w http.ResponseWriter, r *http.Request) {
 		t := time.Now()
 		str := string(content)
 		//ident := fmt.Sprintf("%02d%02d/%02d", t.Day(), t.Month(), t.Year()%100)  //ddmm/yy
-		num := fmt.Sprintf("%02d%02d%02d/%02d",t.Hour(), t.Minute(), t.Second(),t.Day() ) 	//mmss/hh
+		num := fmt.Sprintf("%02d%02d%02d/%02d", t.Hour(), t.Minute(), t.Second(), t.Day()) //mmss/hh
 		str = fmt.Sprintf(str, newSnils(), num, num)
 
 		fmt.Fprintf(w, str)
@@ -69,6 +77,23 @@ func mzrkh(w http.ResponseWriter, r *http.Request) {
 		str = fmt.Sprintf(str, num, cert.СтраховойНомер, cert.СерияСертификата, cert.НомерСертификата, ident)
 		fmt.Fprintf(w, str)
 	}
+}
+
+
+func mzmkLoadedh(w http.ResponseWriter, r *http.Request) {
+
+	var mzmk MZMK
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(r.Body)
+	b := buf.Bytes()
+	//fmt.Fprintf(w, "Body %s\n", b)
+
+	err := json.Unmarshal(b, &mzmk)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+
+	}
+	fmt.Fprintf(w, "%+v", mzmk)
 }
 
 func Testh(w http.ResponseWriter, r *http.Request) {
@@ -147,6 +172,7 @@ func main() {
 	http.HandleFunc("/mzrk", mzrkh)
 	http.HandleFunc("/cert", MSKCerth)
 	http.HandleFunc("/test", Testh)
+	http.HandleFunc("/mzmkLoaded", mzmkLoadedh)
 
 	http.ListenAndServe(":8080", nil)
 }
