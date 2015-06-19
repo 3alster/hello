@@ -29,7 +29,7 @@ const basePath = "/Users/artur/Yandex.Disk/docs/pflb_prj/'15/05.22_Rstyle/mq/"
 
 var certNum = 0
 
-func mzmkh(w http.ResponseWriter, r *http.Request) {
+func mzmkMQh(w http.ResponseWriter, r *http.Request) {
 
 	filename := path.Join(basePath, "мзмкTempl-1.xml")
 	content, err := ioutil.ReadFile(filename)
@@ -53,8 +53,9 @@ func mzmkh(w http.ResponseWriter, r *http.Request) {
 
 var givenCerts []GivenCert
 var newMZMKs MZMK
+var newMZRKs MZMK
 
-func mzrkh(w http.ResponseWriter, r *http.Request) {
+func mzrkMQh(w http.ResponseWriter, r *http.Request) {
 	filename := path.Join(basePath, "мзркTempl-4.xml")
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -95,7 +96,24 @@ func mzmkLoadedh(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func mzrkLoadedh(w http.ResponseWriter, r *http.Request) {
+
+	var mzmk MZMK
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(r.Body)
+	b := buf.Bytes()
+	err := json.Unmarshal(b, &mzmk)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+
+	}
+	fmt.Fprintf(w, "%+v", mzmk)
+	newMZRKs = mzmk
+
+}
+
 func Testh(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain")
 
 	fmt.Fprintf(w, "RawQuery["+string(r.URL.RawQuery)+"]\n")
 	buf := new(bytes.Buffer)
@@ -105,19 +123,65 @@ func Testh(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Body["+s+"]")
 }
 
-func newMZMKsh(w http.ResponseWriter, r *http.Request) {
+func newMZMKh(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json;charset=UTF-8")
-
 	var m mzmkApplication
-	m = newMZMKs.ApplicationList[0]
+	if len(newMZMKs.ApplicationList) > 0 {
+		m = newMZMKs.ApplicationList[0]
+		newMZMKs.ApplicationList = append(newMZMKs.ApplicationList[:0],
+			newMZMKs.ApplicationList[1:]...)
+
+	}
 
 	b, err := json.Marshal(m)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fmt.Fprintf(w, string(b))
 
+	fmt.Fprintf(w, string(b))
+}
+
+func newMZRKh(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json;charset=UTF-8")
+	var m mzmkApplication
+	if len(newMZRKs.ApplicationList) > 0 {
+		m = newMZRKs.ApplicationList[0]
+		newMZRKs.ApplicationList = append(newMZRKs.ApplicationList[:0],
+			newMZRKs.ApplicationList[1:]...)
+
+	}
+
+	b, err := json.Marshal(m)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, string(b))
+}
+
+type stat struct {
+	MzmksLeft int
+	MzrksLeft int
+	LastCert  GivenCert
+}
+
+func statush(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json;charset=UTF-8")
+	var m stat
+	m.MzmksLeft = len(newMZMKs.ApplicationList)
+	m.MzrksLeft = len(newMZRKs.ApplicationList)
+	if len(givenCerts) > 0 {
+		m.LastCert = givenCerts[len(givenCerts)-1]
+	}
+	b, err := json.Marshal(m)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, string(b))
 }
 
 func MSKCerth(w http.ResponseWriter, r *http.Request) {
@@ -182,12 +246,15 @@ func newSnils() string {
 }
 
 func main() {
-	http.HandleFunc("/mzmk", mzmkh)
-	http.HandleFunc("/mzrk", mzrkh)
-	http.HandleFunc("/cert", MSKCerth)
+	http.HandleFunc("/mzmkMQ", mzmkMQh)
+	http.HandleFunc("/mzrkMQ", mzrkMQh)
+	http.HandleFunc("/newCert", MSKCerth)
 	http.HandleFunc("/test", Testh)
-	http.HandleFunc("/mzmkLoaded", mzmkLoadedh)
-	http.HandleFunc("/newMZMKs", newMZMKsh)
+	http.HandleFunc("/saveMzmk", mzmkLoadedh)
+	http.HandleFunc("/saveMzrk", mzrkLoadedh)
+	http.HandleFunc("/newMZMK", newMZMKh)
+	http.HandleFunc("/newMZRK", newMZRKh)
+	http.HandleFunc("/status", statush)
 
 	http.ListenAndServe(":8080", nil)
 }
