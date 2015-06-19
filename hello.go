@@ -17,8 +17,12 @@ type GivenCert struct {
 	НомерСертификата int
 	СтраховойНомер   string
 }
+type citInfo struct {
+	Snils int `json:"snils"`
+}
 type mzmkApplication struct {
-	IncomingNum string `json:"incomingNum"`
+	IncomingNum string  `json:"incomingNum"`
+	CitizenInfo citInfo `json:"citizenInfo"`
 }
 
 type MZMK struct {
@@ -128,47 +132,30 @@ func Testh(w http.ResponseWriter, r *http.Request) {
 }
 
 func newMZMKh(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json;charset=UTF-8")
-	var m mzmkApplication
 	if len(newMZMKs.ApplicationList) > 0 {
-		m = newMZMKs.ApplicationList[0]
+		m := newMZMKs.ApplicationList[0].CitizenInfo.Snils
 		newMZMKs.ApplicationList = append(newMZMKs.ApplicationList[:0],
 			newMZMKs.ApplicationList[1:]...)
+		fmt.Fprintf(w,"%d",m)
 
 	} else {
 		http.Error(w, "Не загружены заявления МЗМК", http.StatusPreconditionFailed)
 		return
 	}
 
-	b, err := json.Marshal(m)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	fmt.Fprintf(w, string(b))
 }
 
 func newMZRKh(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json;charset=UTF-8")
-	var m mzmkApplication
 	if len(newMZRKs.ApplicationList) > 0 {
-		m = newMZRKs.ApplicationList[0]
+		m := newMZRKs.ApplicationList[0].CitizenInfo.Snils
 		newMZRKs.ApplicationList = append(newMZRKs.ApplicationList[:0],
 			newMZRKs.ApplicationList[1:]...)
-
+		fmt.Fprintf(w,"%d",m)
 	} else {
 		http.Error(w, "Не загружены заявления МЗРК", http.StatusPreconditionFailed)
 		return
 	}
 
-	b, err := json.Marshal(m)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	fmt.Fprintf(w, string(b))
 }
 
 type stat struct {
