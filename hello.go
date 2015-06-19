@@ -184,6 +184,61 @@ func statush(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, string(b))
 }
 
+type MQEndpoint struct {
+	Host     string
+	Port     int
+	QManager string
+	Channel  string
+	QName    string
+}
+
+type HTTPEndpoint struct {
+	Host  string
+	Port  int
+	Url   string
+	Users []struct {
+		Login string
+		Pass  string
+		Type  string
+	}
+}
+
+type MSKConf struct {
+	MQ   MQEndpoint
+	HTTP HTTPEndpoint
+}
+type testConf struct {
+	MSK MSKConf
+}
+
+func confh(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json;charset=UTF-8")
+
+	var m testConf
+	filename := path.Join(basePath, "conf.json")
+	content, err := ioutil.ReadFile(filename)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = json.Unmarshal(content, &m)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+
+	}
+
+	b, err := json.Marshal(m)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, string(b))
+
+}
+
 func MSKCerth(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "POST" {
@@ -249,12 +304,13 @@ func main() {
 	http.HandleFunc("/mzmkMQ", mzmkMQh)
 	http.HandleFunc("/mzrkMQ", mzrkMQh)
 	http.HandleFunc("/newCert", MSKCerth)
-	http.HandleFunc("/test", Testh)
 	http.HandleFunc("/saveMzmk", mzmkLoadedh)
 	http.HandleFunc("/saveMzrk", mzrkLoadedh)
-	http.HandleFunc("/newMZMK", newMZMKh)
-	http.HandleFunc("/newMZRK", newMZRKh)
+	http.HandleFunc("/newMzmk", newMZMKh)
+	http.HandleFunc("/newMzrk", newMZRKh)
+	http.HandleFunc("/config", confh)
 	http.HandleFunc("/status", statush)
+	http.HandleFunc("/test", Testh)
 
 	http.ListenAndServe(":8080", nil)
 }
