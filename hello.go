@@ -74,9 +74,13 @@ func mzrkMQh(w http.ResponseWriter, r *http.Request) {
 		if len(givenCerts) > 0 {
 			cert = givenCerts[0]
 			givenCerts = append(givenCerts[:0], givenCerts[1:]...)
+			str = fmt.Sprintf(str, num, cert.СтраховойНомер, cert.СерияСертификата, cert.НомерСертификата, ident)
+			fmt.Fprintf(w, str)
+		} else {
+			http.Error(w, "Не загружены связи МЗМК <-> Сертификат", http.StatusPreconditionFailed)
+
 		}
-		str = fmt.Sprintf(str, num, cert.СтраховойНомер, cert.СерияСертификата, cert.НомерСертификата, ident)
-		fmt.Fprintf(w, str)
+
 	}
 }
 
@@ -131,6 +135,9 @@ func newMZMKh(w http.ResponseWriter, r *http.Request) {
 		newMZMKs.ApplicationList = append(newMZMKs.ApplicationList[:0],
 			newMZMKs.ApplicationList[1:]...)
 
+	} else {
+		http.Error(w, "Не загружены заявления МЗМК", http.StatusPreconditionFailed)
+		return
 	}
 
 	b, err := json.Marshal(m)
@@ -150,6 +157,9 @@ func newMZRKh(w http.ResponseWriter, r *http.Request) {
 		newMZRKs.ApplicationList = append(newMZRKs.ApplicationList[:0],
 			newMZRKs.ApplicationList[1:]...)
 
+	} else {
+		http.Error(w, "Не загружены заявления МЗРК", http.StatusPreconditionFailed)
+		return
 	}
 
 	b, err := json.Marshal(m)
@@ -162,18 +172,20 @@ func newMZRKh(w http.ResponseWriter, r *http.Request) {
 }
 
 type stat struct {
-	MzmksLeft int
-	MzrksLeft int
-	LastCert  GivenCert
+	MzmksNewPollSize  int
+	MzrksNewPoolSize  int
+	MzrkReadyPoolSize int
+	LastCert          GivenCert
 }
 
 func statush(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json;charset=UTF-8")
 	var m stat
-	m.MzmksLeft = len(newMZMKs.ApplicationList)
-	m.MzrksLeft = len(newMZRKs.ApplicationList)
-	if len(givenCerts) > 0 {
-		m.LastCert = givenCerts[len(givenCerts)-1]
+	m.MzmksNewPollSize = len(newMZMKs.ApplicationList)
+	m.MzrksNewPoolSize = len(newMZRKs.ApplicationList)
+	m.MzrkReadyPoolSize = len(givenCerts)
+	if m.MzrkReadyPoolSize > 0 {
+		m.LastCert = givenCerts[m.MzrkReadyPoolSize-1]
 	}
 	b, err := json.Marshal(m)
 	if err != nil {
