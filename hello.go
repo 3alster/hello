@@ -250,9 +250,7 @@ func confh(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, string(b))
 
 }
-
-func MSKCerth(w http.ResponseWriter, r *http.Request) {
-
+func linkMSKCerth(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 
 		var cert GivenCert
@@ -268,24 +266,27 @@ func MSKCerth(w http.ResponseWriter, r *http.Request) {
 		givenCerts = append(givenCerts, cert)
 		fmt.Fprintf(w, "len=%d", len(givenCerts))
 
-	} else {
-		w.Header().Set("Content-Type", "application/json;charset=UTF-8")
-
-		type MSKCert struct {
-			СерияСертификата string
-			НомерСертификата int
-		}
-		cert := MSKCert{СерияСертификата: "МК-5",
-			НомерСертификата: 9999000 + certNum,
-		}
-		certNum++
-		b, err := json.Marshal(cert)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		fmt.Fprintf(w, string(b))
 	}
+}
+
+func MSKCerth(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Content-Type", "application/json;charset=UTF-8")
+
+	type MSKCert struct {
+		СерияСертификата string
+		НомерСертификата int
+	}
+	cert := MSKCert{СерияСертификата: "МК-5",
+		НомерСертификата: 9999000 + certNum,
+	}
+	certNum++
+	b, err := json.Marshal(cert)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	fmt.Fprintf(w, string(b))
 
 }
 
@@ -316,6 +317,8 @@ func main() {
 	http.HandleFunc("/mzmkMQ", mzmkMQh)
 	http.HandleFunc("/mzrkMQ", mzrkMQh)
 	http.HandleFunc("/newCert", MSKCerth)
+	http.HandleFunc("/linkCert", linkMSKCerth)
+
 	http.HandleFunc("/saveMzmk", mzmkLoadedh)
 	http.HandleFunc("/saveMzrk", mzrkLoadedh)
 	http.HandleFunc("/newMzmk", newMZMKh)
