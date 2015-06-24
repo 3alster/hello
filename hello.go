@@ -329,5 +329,7 @@ func main() {
 	http.HandleFunc("/status", statush)
 	http.HandleFunc("/test", Testh)
 
+	http.HandleFunc("/getCertEmpty", getCertEmpty)
+
 	http.ListenAndServe(":8080", nil)
 }
