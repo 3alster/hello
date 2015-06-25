@@ -6,17 +6,21 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"sync"
 )
 
 type Number struct {
-	Number string `json:"number"`
+	Number       string `json:"number"`
+	sync.RWMutex        //synchronized
 }
 
 type Blanks struct {
-	Blanks []Number `json:"blanks"`
+	Blanks       []Number `json:"blanks"`
+	sync.RWMutex          //synchronized
 }
 
 var emptyBlank Blanks
+var sliceEmptyBlank []Number
 
 //get empty blanks certificates and save its 
 func getCertEmpty(w http.ResponseWriter, r *http.Request) {
@@ -35,6 +39,17 @@ func getCertEmpty(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 
 	}
-	fmt.Fprintf(w, "%+v", cert)
+	emptyBlank.RLock()
 	emptyBlank = cert
+	// sliceEmptyBlank = emptyBlank.Blanks[0:]
+	emptyBlank.RUnlock()
+	fmt.Fprintf(w, "%+v", cert)
+}
+
+//return number certificate
+func numberEmptyCert(w http.ResponseWriter, r *http.Request) {
+	emptyBlank.RLock()
+	fmt.Fprintf(w, emptyBlank.Blanks[0].Number)
+	emptyBlank.Blanks = emptyBlank.Blanks[1:]
+	emptyBlank.RUnlock()
 }
